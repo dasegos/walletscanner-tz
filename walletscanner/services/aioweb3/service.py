@@ -43,8 +43,8 @@ class AsyncWeb3Client:
 
         :param condition_id: Unique hex of the market.
         :type condition_id: str 
-        :param outcome_index: Index of the outcome in the list.
-        :type outcome_index: int
+        :param outcome_index_mask: Mask of the outcome index.
+        :type outcome_index_mask: int
 
         :return: Restored token asset_id (position_id) on Polymarket.
         :rtype: Decimal
@@ -258,15 +258,12 @@ class AsyncWeb3Client:
                 tasks = [self.web3_client.eth.get_logs(f) for f in logs_filters]
                 chunk_results = await asyncio.gather(*tasks, return_exceptions=False)
 
-                local_processed_results = list()
                 for result in chunk_results:
                     for log in result:
                         result = await self._process_log(log)
                         if isinstance(result, dict):
-                            local_processed_results.append(result)
                             logs_list.append(result) 
                         else: 
-                            local_processed_results.extend(result)
                             logs_list.extend(result) 
 
                 progress_bar_data["processed"] += (end_block - start_block + 1)
@@ -345,7 +342,7 @@ class AsyncWeb3Client:
         except ValueError:
             raise WalletAddressInvalidError(address)
 
-        last_block = await self.web3_client.eth.block_number # last block in blockchain
+        last_block = await self.web3_client.eth.block_number - 5 # last block in blockchain (finalized)
         start_block = await self.get_wallet_creation_block(wallet_checksum_address) # the block in which the wallet was created
         wallet_topic_address = self.transform_address_for_topic(wallet_checksum_address)
 
