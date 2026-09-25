@@ -69,7 +69,7 @@ class ServicePipeline:
 
     async def resolve_missing_data(self, address: str) -> dict[str, Any]:
         """
-        The method to resolve data is it's missing.
+        The method to resolve data if it's missing.
         Searches for a corresponding key in Redis database.
         If does not find one, launches a background task to 
         collect transaction history.
