@@ -262,7 +262,7 @@ class AsyncWeb3Client:
                 if hasattr(e, "rpc_response") and isinstance(e.rpc_response, dict):
                     error_code = e.rpc_response.get("error", {}).get("code")
 
-                if "429" in error_str or "timeout" in error_str or error_code == RPC_ERRORS.CONN_TIMEOUT_ERROR or "413" in error_str or "payload too large" in error_str:
+                if "429" in error_str or "timeout" in error_str or error_code == RPC_ERRORS.CONN_TIMEOUT_ERROR or "413" in error_str or "payload too large" in error_str or isinstance(e, (TimeoutError, asyncio.TimeoutError)):
                     if (end_block - start_block) < min_chunk: 
                         # The problem is not the chunk being too heavy. We don't split it, but just go to asyncio.sleep()
 
