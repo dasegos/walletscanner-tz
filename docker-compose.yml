@@ -1,0 +1,71 @@
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: wallet_postgres
+    restart: always
+    env_file:
+      - ./walletscanner/core/settings/.env.deployment
+    environment:
+      POSTGRES_USER: ${POSTGRES_LOCAL_USERNAME}
+      POSTGRES_PASSWORD: ${POSTGRES_LOCAL_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_LOCAL_DATABASE}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_LOCAL_USERNAME} -d ${POSTGRES_LOCAL_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  redis:
+    image: redis:7-alpine
+    container_name: wallet_redis
+    restart: always
+    env_file:
+      - ./walletscanner/core/settings/.env.deployment
+    command: sh -c "redis-server --requirepass $${REDIS_LOCAL_PASSWORD} --save 60 1 --loglevel warning"
+    volumes:
+      - redis_data:/data
+    ports:
+      - "127.0.0.1:6380:6379"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_LOCAL_PASSWORD} ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  web:
+    build: .
+    container_name: walletscanner
+    restart: always
+    env_file:
+      - ./walletscanner/core/settings/.env.deployment
+    ports:
+      - "8888:8888"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+  redis_data:

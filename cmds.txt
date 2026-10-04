@@ -1,0 +1,7 @@
+# docker compose --env-file ./walletscanner/core/settings/.env.deployment up -d --build
+
+# docker compose down -v && docker compose --env-file ./walletscanner/core/settings/.env.deployment up -d --build
+
+# poetry run python3 -m walletscanner.main
+
+# uvicorn walletscanner.main:app --host 0.0.0.0 --port 8888
