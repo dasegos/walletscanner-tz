@@ -1,5 +1,4 @@
 # Wallet data retrieval service
-## accessible at http://176.119.159.109:8888/docs
 
 ## Локальный запуск
 
