@@ -36,7 +36,12 @@ class Transaction(Base):
     
     # Transaction uniqueness based on hash, log index within the block, and position ID (applicable to ERC-1155 Batch)
     __table_args__ = (
-        UniqueConstraint("transaction_hash", "log_index", "asset_id", name="uq_tx_hash_log_index_pos_id"),
+        Index(
+            "uq_transaction_hash_log_index_asset_id",
+            "transaction_hash", "log_index", "asset_id",
+            unique=True,
+            postgresql_nulls_not_distinct=True
+        ),
     )
     
     # [WARNING] `@validates` is not executed when writing to the database through the raw connection! 

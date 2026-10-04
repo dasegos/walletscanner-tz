@@ -10,7 +10,7 @@ ENV_DEPLOYMENT_FILE_PATH = Path(__file__).resolve().parent / "settings" / ".env.
 
 class ConfigBase(BaseSettings): 
     model_config = SettingsConfigDict( 
-        env_file=ENV_DEPLOYMENT_FILE_PATH, 
+        env_file=ENV_DEVELOPMENT_FILE_PATH, 
         env_file_encoding="utf-8", 
         extra="ignore" 
     )
@@ -51,8 +51,8 @@ class RedisDBConfig(ConfigBase):
 class Settings(ConfigBase): 
     postgres      : PostgresDBConfig = Field(default_factory=PostgresDBConfig) 
     redis         : RedisDBConfig    = Field(default_factory=RedisDBConfig) 
-    RPC_URL       : str              = "https://tenderly.rpc.polygon.community" 
-    DEBUG         : bool             = False
+    RPC_URL       : str              = "https://tenderly.rpc.polygon.community"
+    DEBUG         : bool             = True
     DROP_DATABASE : bool             = False
     
 

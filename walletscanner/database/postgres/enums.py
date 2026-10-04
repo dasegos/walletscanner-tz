@@ -26,6 +26,7 @@ class TransactionType(str, Enum):
 
 class AssetType(str, Enum):
     PUSD  = "PUSD"  # pUSD on https://polymarket.com
+    USDCE = "USDCE" # USDC.e on https://polymarket.com (until)
     SHARE = "SHARE" # YES/NO tokens
     # available for expansion ...
 
