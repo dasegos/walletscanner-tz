@@ -254,7 +254,8 @@ class AsyncWeb3Client:
                     app_logger.warning(f"Redis refresh_ttl failed (non-critical): {redis_err}")
 
             except Exception as e:
-                app_logger.error(f"ERROR OCCURED: {e}")
+                app_logger.error(f"ERROR OCCURED: {str(e)}")
+                print(str(e))
                 error_str = str(e).lower()
                 error_code = None
                 
