@@ -11,7 +11,7 @@ import asyncio
 # Project imports
 from walletscanner.database.redis.crud import RedisTasksService
 from walletscanner.database.postgres.enums import TransactionType, AssetType
-from walletscanner.services.aioweb3.constants import CONTRACTS, pUSDTopics, CTFTopics
+from walletscanner.services.aioweb3.constants import CONTRACTS, USDTopics, CTFTopics
 from walletscanner.core.dependencies import get_async_web3_session
 from walletscanner.core.logger import app_logger
 from walletscanner.core.exceptions import WalletAddressInvalidError, WalletNotInitializedError, RPC_ERRORS
@@ -23,6 +23,7 @@ class AsyncWeb3Client:
     Polymarket wallet history and balance.
     """
     PUSD_CONTRACT_ADDRESS = CONTRACTS.get("pusd").get("address")
+    USDCE_CONTRACT_ADDRESS = CONTRACTS.get("usdce").get("address")
     CONDITIONAL_TOKENS_ADDRESS = CONTRACTS.get("conditional_tokens").get("address")
 
     def __init__(self, 
@@ -34,6 +35,7 @@ class AsyncWeb3Client:
         self.redis_service = redis_service
 
         self.PUSD_CONTRACT = self.web3_client.eth.contract(address=self.PUSD_CONTRACT_ADDRESS, abi=CONTRACTS.get("pusd").get("abi"))
+        self.USDCE_CONTRACT = self.web3_client.eth.contract(address=self.USDCE_CONTRACT_ADDRESS, abi=CONTRACTS.get("usdce").get("abi"))
         self.CONDITIONAL_TOKENS_CONTRACT = self.web3_client.eth.contract(address=self.CONDITIONAL_TOKENS_ADDRESS, abi=CONTRACTS.get("conditional_tokens").get("abi"))
 
     # -------------------------------------------------------------------------------------------
@@ -78,25 +80,34 @@ class AsyncWeb3Client:
         :rtype: dict[str, Any] | list[dict[str, Any]]
         """
         processed_log = {
-            "transaction_hash": log["transactionHash"].hex(),
+            "transaction_hash": "0x" + log["transactionHash"].hex(),
             "log_index": log["logIndex"],
             "block_number": log["blockNumber"]
         }
 
         event_signature = "0x" + log["topics"][0].hex()
+        log_source = log["address"].lower()
 
         # TRANSFER EVENTS
-        if event_signature == pUSDTopics.TRANSFER.value:
+        if event_signature == USDTopics.TRANSFER.value:
             # event Transfer(address indexed from, address indexed to, uint256 value);
             # from - 1, to - 2
-            decoded_log = self.PUSD_CONTRACT.events.Transfer().process_log(log)
-            processed_log["asset_type"] = AssetType.PUSD
+            if log_source == self.PUSD_CONTRACT_ADDRESS.lower():
+                asset_type = AssetType.PUSD
+                decoded_log = self.PUSD_CONTRACT.events.Transfer().process_log(log)
+                amount = decoded_log["args"]["amount"]
+            else:
+                asset_type = AssetType.USDCE
+                decoded_log = self.USDCE_CONTRACT.events.Transfer().process_log(log)
+                amount = decoded_log["args"]["value"]
+
+            processed_log["asset_type"] = asset_type
             processed_log["asset_id"] = None
             from_address = decoded_log["args"]["from"].lower()
             to_address = decoded_log["args"]["to"].lower()
             processed_log["from_address"] = from_address
             processed_log["to_address"] = to_address
-            processed_log["amount"] = decoded_log["args"]["amount"]
+            processed_log["amount"] = amount
             
             if from_address == ADDRESS_ZERO and to_address != ADDRESS_ZERO:
                 processed_log["transaction_type"] = TransactionType.DEPOSIT
@@ -218,8 +229,12 @@ class AsyncWeb3Client:
 
             logs_filters = [
                 # pUSD
-                {"address": self.PUSD_CONTRACT_ADDRESS, "topics": [pUSDTopics.TRANSFER.value, None, wallet_topic_address]}, # in-Transfers
-                {"address": self.PUSD_CONTRACT_ADDRESS, "topics": [pUSDTopics.TRANSFER.value, wallet_topic_address, None]}, # out-Transfers
+                {"address": self.PUSD_CONTRACT_ADDRESS, "topics": [USDTopics.TRANSFER.value, None, wallet_topic_address]}, # in-Transfers
+                {"address": self.PUSD_CONTRACT_ADDRESS, "topics": [USDTopics.TRANSFER.value, wallet_topic_address, None]}, # out-Transfers
+
+                # USDC.e
+                {"address": self.USDCE_CONTRACT_ADDRESS, "topics": [USDTopics.TRANSFER.value, None, wallet_topic_address]}, # in-Transfers
+                {"address": self.USDCE_CONTRACT_ADDRESS, "topics": [USDTopics.TRANSFER.value, wallet_topic_address, None]}, # out-Transfers
 
                 # Conditional Tokens
                 {"address": self.CONDITIONAL_TOKENS_ADDRESS, "topics": [CTFTopics.TRANSFER_SINGLE.value, None, None, wallet_topic_address]}, # in-SingleTransfers

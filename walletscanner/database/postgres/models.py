@@ -1,5 +1,5 @@
 # Side imports
-from sqlalchemy import Enum, UniqueConstraint, Index
+from sqlalchemy import Enum, Index
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, validates
 from sqlalchemy.types import CHAR, Integer, Numeric, String, DateTime
 from sqlalchemy.dialects.postgresql import JSONB, CITEXT
@@ -43,7 +43,7 @@ class Transaction(Base):
             postgresql_nulls_not_distinct=True
         ),
     )
-    
+
     # [WARNING] `@validates` is not executed when writing to the database through the raw connection! 
     @validates("from_address", "to_address")
     def validate_addresses_and_length(self, key: str, value: str) -> str:

@@ -135,6 +135,6 @@ async def get_transactions_counts(
     if data.get("status") == "pending":
         return data
     else:
-        expr_func = lambda m: (m.from_address == address) | (m.to_address == address),
+        expr_func = lambda m: (m.from_address == address) | (m.to_address == address)
         result = await transactions_service.count_by("id", group_by="transaction_type", expr_func=expr_func)
         return TransactionsCounts(counts=dict(result))
